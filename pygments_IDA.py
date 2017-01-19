@@ -24,14 +24,16 @@ class IDALexer(RegexLexer):
     identifier = r'[a-zA-Z$._?][a-zA-Z0-9$._?#@~]*'
     lineprefixes = r'([a-zA-Z$._?][a-zA-Z0-9$._?#@~]*:[a-zA-Z0-9$._?#@~]*)|[0-9]*\s+'
     hexn = r'(?:0[xX][0-9a-fA-F]+|$0[0-9a-fA-F]*|[0-9]+[0-9a-fA-F]*h)'
+    opcode = r'([0-9A-Fa-f]{2}[ ])*([0-9A-Fa-f]{2})'
     octn = r'[0-7]+q'
     binn = r'[01]+b'
     decn = r'[0-9]+'
     floatn = decn + r'\.e?' + decn
     string = r'"(\\"|[^"\n])*"|' + r"'(\\'|[^'\n])*'|" + r"`(\\`|[^`\n])*`"
     declkw = r'(?:res|d)[bwdqt]\s+|times|unicode'
-    register = (r'r[0-9][0-5]?[bwd]|'
-                r'[a-d][lh][^a-zA-Z]|[er]?[a-d]x|[er]?[sb]p|[er]?[sd]i|[c-gs]s|st[0-7]|'
+    register = (r'r(([9]|[1][0-4])|([0-9][0-5]))[bwd]?|'
+                r'r([9]|[1][0-4])[bwd]?|'
+                r'[a-d][lh][^a-zA-Z]|[er]?[a-di](x|p)|[er]?[sb]p|[er]?[sd]i|[c-gs]s|st[0-7]|'
                 r'mm[0-7]|cr[0-4]|dr[0-367]|tr[3-7]')
     type = r'byte|[dq]?word\s+|offset|ptr'
 
@@ -42,6 +44,7 @@ class IDALexer(RegexLexer):
             (r'^\s*%', Comment.Preproc, 'preproc'),
             (lineprefixes, Name.Label),
             (identifier + ':', Name.Label),
+            (opcode, Name.Label),
             (r'(%s)(\s+)(=)' % identifier,
                 bygroups(Name.Constant, Keyword.Declaration, Keyword.Declaration),
                 'instruction-args'),
@@ -50,7 +53,7 @@ class IDALexer(RegexLexer):
             (r'[\r\n]+', Text)
         ],
         'instruction-args': [
-	    (r'<', String, 'unicodestring'),
+        (r'<', String, 'unicodestring'),
             (string, String),
             (hexn, Number.Hex),
             (octn, Number.Oct),
@@ -73,16 +76,16 @@ class IDALexer(RegexLexer):
             (r'[ \t]+', Text),
             (r';.*', Comment.Single)
         ],
-	'unicodestring': [
-	    (r'>', String, '#pop'),
+        'unicodestring': [
+        (r'>', String, '#pop'),
             (r'\\([\\abfnrtv"\']|x[a-fA-F0-9]{2,4}|[0-7]{1,3})', String.Escape),
             (r'[^\\"\n]+', String),
             (r'\\\n', String),
             (r'\\', String),
-	],
+        ],
         'punctuation': [
             (r'[,():\[\]]+', Punctuation),
-	    (r'[~!%^&*+=|?:<>/-]', Operator),
+            (r'[~!%^&*+=|?:<>/-]', Operator),
             (r'[$]+', Keyword.Constant),
             (type, Keyword.Type),
             (declkw, Keyword.Declaration),
